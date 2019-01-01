@@ -10,6 +10,26 @@ class MessageType(DjangoObjectType):
         filter_fields = {'message': ['icontains']}
         interfaces = (graphene.Node, )
 
+class CreateMessage(graphene.Mutation):
+    class Input:
+        message = graphene.String()
+
+    form_errors = graphene.String()
+    message = graphene.Field(lambda: MessageType)
+
+    @staticmethod
+    def mutate(self, info):
+        if not info.context.user.is_authenticated():
+            return CreateMessage(form_errors=json.dumps('Please login!'))
+        content = 'asdf message'#info.args.get('message')
+        message = Message.objects.create(
+            user=info.context.user, 
+            message=str(content))
+        return CreateMessage(message=message, form_errors=None)
+
+class Mutation(graphene.AbstractType):
+    create_message = CreateMessage.Field()
+
 class Query(graphene.AbstractType):
     all_messages = DjangoFilterConnectionField(MessageType)
 
